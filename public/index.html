@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>LYNCK CHAT</title>
+    <link rel="stylesheet" href="./assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="chat-header">
+        <h1><img src="./assets/images/logo.png" alt="Lynck Chat Logo" /></h1>
+      </div>
+      <div class="chat-display"></div>
+      <div class="chat-form">
+        <input
+          type="text"
+          name="username"
+          id="username"
+          maxlength="10"
+          placeholder="Apelido"
+          tabindex="1"
+        />
+        <input
+          type="text"
+          placeholder="Type here"
+          id="text"
+          onkeypress="pressEnter()"
+          disabled
+          tabindex="2"
+        />
+        <button id="sendMessage" disabled>
+          send
+        </button>
+      </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      // const colors = ["#2e112d90", "#f0433a90", "#c9283e90"];
+
+      const getRandomColor = () => {
+        var letters = "0123456789ABCDEF";
+        var color = "#";
+        for (var i = 0; i < 6; i++) {
+          color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+      };
+
+      const selectedColor = getRandomColor() + "90";
+
+      // Focus on Nickname field
+      document.getElementById("username").focus();
+
+      // Deactivate username field and release message field
+      document.getElementById("username").addEventListener("blur", e => {
+        const username = document.querySelector("#username");
+        const message = document.querySelector("#text");
+        const btnSubmit = document.querySelector("#sendMessage");
+
+        if (username.value !== "") {
+          username.setAttribute("disabled", true);
+          message.removeAttribute("disabled");
+          btnSubmit.removeAttribute("disabled");
+          message.focus();
+        }
+      });
+
+      var socket = io();
+
+      // Emit send message to Socket IO
+      const setChatMessage = () => {
+        const username = document.querySelector("#username");
+        const message = document.querySelector("#text");
+
+        if (username.value.length && message.value.length) {
+          const messageObject = {
+            username: username.value,
+            message: message.value,
+            color: selectedColor
+          };
+
+          renderMessage(messageObject);
+
+          socket.emit("sendMessage", messageObject);
+          message.value = "";
+          return false;
+        }
+      };
+      // Enter event
+      const pressEnter = e => {
+        if (!e) e = window.event;
+        var keyCode = e.keyCode || e.which;
+        if (keyCode == "13") {
+          setChatMessage();
+          return false;
+        }
+      };
+
+      // Button Send Message Click
+      document.getElementById("sendMessage").addEventListener("click", e => {
+        setChatMessage();
+      });
+
+      // Render image
+      const renderMessage = data => {
+        const display = document.querySelector(".chat-display");
+        const messages = display.childNodes;
+
+        const div = document.createElement("div");
+
+        // let messageClass = "message";
+        // if (messages.length % 2 === 1) messageClass = "message-2";
+
+        div.setAttribute("class", "message");
+        div.setAttribute("style", "background-color: " + data.color);
+        div.setAttribute("id", "message");
+
+        strongTag = document.createElement("strong");
+        nicknameText = document.createTextNode(data.username + ": ");
+        strongTag.appendChild(nicknameText);
+
+        const divText = document.createTextNode(data.message);
+
+        div.appendChild(strongTag);
+        div.appendChild(divText);
+
+        display.appendChild(div);
+
+        // Scroll Chat
+        display.scrollTo(0, display.scrollHeight * 2);
+        document.getElementById("text").focus();
+      };
+
+      socket.on("previousMessages", messages => {
+        for (message of messages) {
+          renderMessage(message);
+        }
+      });
+
+      socket.on("message", data => {
+        renderMessage(data);
+      });
+    </script>
+  </body>
+</html>
