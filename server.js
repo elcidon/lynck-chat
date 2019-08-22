@@ -35,8 +35,10 @@ io.on("connection", function(socket) {
   console.info(socket);
 });
 
-http.listen(3000, function() {
-  console.log("listening on *:3000");
+const PORT = process.env.port || 3000;
+
+http.listen(PORT, function() {
+  console.log(`listening on *:${PORT}`);
 });
 
 //TODO Adicionar mensagem quando o usuário entrar na sala "FUlano está digitando..."

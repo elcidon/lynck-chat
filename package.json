@@ -4,6 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
+    "start": "pm2 start server.js --name lynck-chat",  
     "dev": "nodemon server"
   },
   "keywords": [],
