@@ -21,9 +21,19 @@ io.on("connection", function(socket) {
 
   socket.emit("previousMessages", messages);
 
+  socket.on("connectUser", msg => {
+    console.info(msg);
+    socket.broadcast.emit("userConnected", msg);
+  });
+
+  socket.on("disconnectUser", msg => {
+    console.info(msg);
+    socket.broadcast.emit("userDisconnected", msg);
+  });
+
   socket.on("sendMessage", data => {
     // io.emit("chat message", msg);
-    console.info(data);
+
     messages.push(data);
     socket.broadcast.emit("message", data);
     //io.emit("message", data);

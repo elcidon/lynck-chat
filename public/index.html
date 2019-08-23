@@ -7,12 +7,14 @@
     <title>LYNCK CHAT</title>
     <link rel="stylesheet" href="./assets/css/styles.css" />
   </head>
-  <body>
+  <body onunload="disconnectUser()">
     <div class="container">
       <div class="chat-header">
         <h1><img src="./assets/images/logo.png" alt="Lynck Chat Logo" /></h1>
       </div>
-      <div class="chat-display"></div>
+      <div class="chat-display">
+        <!-- Messages goes here -->
+      </div>
       <div class="chat-form">
         <input
           type="text"
@@ -39,6 +41,9 @@
     <script>
       // const colors = ["#2e112d90", "#f0433a90", "#c9283e90"];
 
+      /*
+       * Random color
+       */
       const getRandomColor = () => {
         var letters = "0123456789ABCDEF";
         var color = "#";
@@ -47,19 +52,22 @@
         }
         return color;
       };
-
       const selectedColor = getRandomColor() + "90";
 
       // Focus on Nickname field
       document.getElementById("username").focus();
 
-      // Deactivate username field and release message field
+      /*
+       * Deactivate username field and release message field
+       */
       document.getElementById("username").addEventListener("blur", e => {
         const username = document.querySelector("#username");
         const message = document.querySelector("#text");
         const btnSubmit = document.querySelector("#sendMessage");
 
         if (username.value !== "") {
+          // Connect User
+          connectUser(username.value);
           username.setAttribute("disabled", true);
           message.removeAttribute("disabled");
           btnSubmit.removeAttribute("disabled");
@@ -69,7 +77,29 @@
 
       var socket = io();
 
-      // Emit send message to Socket IO
+      /*
+       * Emit event to WebSocket
+       */
+      const connectUser = username => {
+        const display = document.querySelector(".chat-display");
+        const userConnectedMsg = username + " acaba de se conectar na sala...";
+
+        renderNotice("Você acaba de ingressar na sala");
+        socket.emit("connectUser", userConnectedMsg);
+      };
+
+      const disconnectUser = () => {
+        const username = document.querySelector("#username").value;
+        const display = document.querySelector(".chat-display");
+        const userConnectedMsg = username + " Saiu da sala...";
+
+        socket.emit("disconnectUser", userConnectedMsg);
+      };
+
+      /*
+       * Emit Message to WebSocket
+       */
+
       const setChatMessage = () => {
         const username = document.querySelector("#username");
         const message = document.querySelector("#text");
@@ -103,35 +133,48 @@
         setChatMessage();
       });
 
-      // Render image
-      const renderMessage = data => {
+      /**
+       * Render Notice When User Log on
+       */
+      const renderNotice = msg => {
         const display = document.querySelector(".chat-display");
-        const messages = display.childNodes;
 
-        const div = document.createElement("div");
-
-        // let messageClass = "message";
-        // if (messages.length % 2 === 1) messageClass = "message-2";
-
-        div.setAttribute("class", "message");
-        div.setAttribute("style", "background-color: " + data.color);
-        div.setAttribute("id", "message");
-
-        strongTag = document.createElement("strong");
-        nicknameText = document.createTextNode(data.username + ": ");
-        strongTag.appendChild(nicknameText);
-
-        const divText = document.createTextNode(data.message);
-
-        div.appendChild(strongTag);
-        div.appendChild(divText);
-
-        display.appendChild(div);
+        display.appendChild(createElement("div", msg, [{ class: "notice" }]));
 
         // Scroll Chat
         display.scrollTo(0, display.scrollHeight * 2);
         document.getElementById("text").focus();
       };
+
+      // Render image
+      const renderMessage = data => {
+        const display = document.querySelector(".chat-display");
+        const messages = display.childNodes;
+
+        const message = createElement(
+          "div",
+          data.username + ": " + data.message,
+          [
+            { class: "message" },
+            { id: "message" },
+            { style: "background-color: " + data.color }
+          ]
+        );
+
+        display.appendChild(message);
+
+        // Scroll Chat
+        display.scrollTo(0, display.scrollHeight * 2);
+        document.getElementById("text").focus();
+      };
+
+      socket.on("userConnected", msg => {
+        renderNotice(msg);
+      });
+
+      socket.on("userDisconnected", msg => {
+        renderNotice(msg);
+      });
 
       socket.on("previousMessages", messages => {
         for (message of messages) {
@@ -142,6 +185,27 @@
       socket.on("message", data => {
         renderMessage(data);
       });
+
+      // Create element with text and attributes
+      const createElement = (element, text, attrs = null) => {
+        if (element !== null) {
+          let elem = document.createElement(element);
+
+          let elemText = document.createTextNode(text);
+
+          elem.appendChild(elemText);
+
+          if (attrs !== null) {
+            // Setting attributes
+            for (attr of attrs) {
+              let attrName = Object.keys(attr)[0];
+              elem.setAttribute(attrName, attr[attrName]);
+            }
+          }
+
+          return elem;
+        }
+      };
     </script>
   </body>
 </html>
